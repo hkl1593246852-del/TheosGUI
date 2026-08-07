@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14  # Apple Silicon, Xcode 15+
+    runs-on: macos-15  # Xcode 16+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,6 +62,7 @@ jobs:
 
       - name: Build IPA (No Sign)
         run: |
+          set -o pipefail
           xcodebuild \
             -project TheosGUI.xcodeproj \
             -scheme TheosGUI \
@@ -74,7 +75,7 @@ jobs:
             DEVELOPMENT_TEAM="" \
             ONLY_ACTIVE_ARCH=NO \
             -derivedDataPath ./DerivedData \
-            build 2>&1 | tail -50
+            build 2>&1 | tail -100
 
       - name: Package IPA
         run: |

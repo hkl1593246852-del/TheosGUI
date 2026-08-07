@@ -18,38 +18,75 @@ jobs:
       - name: Create placeholder AppIcon
         run: |
           mkdir -p TheosGUI/Assets.xcassets/AppIcon.appiconset
+
+          # 用 Python 生成指定尺寸的蓝色占位 PNG
+          python3 << 'PYEOF'
+          import struct, zlib, os
+
+          def make_png(path, w, h):
+              def chunk(ctype, data):
+                  c = ctype + data
+                  return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+              header = b'\x89PNG\r\n\x1a\n'
+              ihdr = chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
+              raw = b''
+              for y in range(h):
+                  raw += b'\x00'
+                  for x in range(w):
+                      raw += b'\x40\x80\xff'
+              idat = chunk(b'IDAT', zlib.compress(raw))
+              iend = chunk(b'IEND', b'')
+              with open(path, 'wb') as f:
+                  f.write(header + ihdr + idat + iend)
+
+          base = 'TheosGUI/Assets.xcassets/AppIcon.appiconset'
+          # Generate each needed pixel size
+          sizes = {
+              'icon20x20.png':   (20, 20),
+              'icon29x29.png':   (29, 29),
+              'icon40x40.png':   (40, 40),
+              'icon58x58.png':   (58, 58),
+              'icon60x60.png':   (60, 60),
+              'icon76x76.png':   (76, 76),
+              'icon80x80.png':   (80, 80),
+              'icon87x87.png':   (87, 87),
+              'icon120x120.png': (120, 120),
+              'icon152x152.png': (152, 152),
+              'icon167x167.png': (167, 167),
+              'icon180x180.png': (180, 180),
+          }
+          for fname, (w, h) in sizes.items():
+              make_png(os.path.join(base, fname), w, h)
+              print(f'  Created {fname} ({w}x{h})')
+          PYEOF
+
           cat > TheosGUI/Assets.xcassets/Contents.json << 'JSONEOF'
           {
             "info" : { "author" : "xcode", "version" : 1 }
           }
           JSONEOF
-          # 生成一个 1x1 透明 PNG 作为占位图标 (最小合法 PNG)
-          # PNG hex: 89 50 4E 47 ...
-          printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82' > TheosGUI/Assets.xcassets/AppIcon.appiconset/AppIcon60x60.png
-          for size in 29 40 57 50 72 76; do
-            cp TheosGUI/Assets.xcassets/AppIcon.appiconset/AppIcon60x60.png "TheosGUI/Assets.xcassets/AppIcon.appiconset/AppIcon${size}x${size}.png"
-          done
+
           cat > TheosGUI/Assets.xcassets/AppIcon.appiconset/Contents.json << 'JSONEOF'
           {
             "images" : [
-              {"size" : "20x20", "idiom" : "iphone", "filename" : "AppIcon29x29.png", "scale" : "2x"},
-              {"size" : "20x20", "idiom" : "iphone", "filename" : "AppIcon40x40.png", "scale" : "3x"},
-              {"size" : "29x29", "idiom" : "iphone", "filename" : "AppIcon29x29.png", "scale" : "1x"},
-              {"size" : "29x29", "idiom" : "iphone", "filename" : "AppIcon57x57.png", "scale" : "2x"},
-              {"size" : "29x29", "idiom" : "iphone", "filename" : "AppIcon60x60.png", "scale" : "3x"},
-              {"size" : "40x40", "idiom" : "iphone", "filename" : "AppIcon40x40.png", "scale" : "2x"},
-              {"size" : "40x40", "idiom" : "iphone", "filename" : "AppIcon60x60.png", "scale" : "3x"},
-              {"size" : "60x60", "idiom" : "iphone", "filename" : "AppIcon60x60.png", "scale" : "2x"},
-              {"size" : "60x60", "idiom" : "iphone", "filename" : "AppIcon60x60.png", "scale" : "3x"},
-              {"size" : "20x20", "idiom" : "ipad", "filename" : "AppIcon29x29.png", "scale" : "1x"},
-              {"size" : "20x20", "idiom" : "ipad", "filename" : "AppIcon40x40.png", "scale" : "2x"},
-              {"size" : "29x29", "idiom" : "ipad", "filename" : "AppIcon29x29.png", "scale" : "1x"},
-              {"size" : "29x29", "idiom" : "ipad", "filename" : "AppIcon57x57.png", "scale" : "2x"},
-              {"size" : "40x40", "idiom" : "ipad", "filename" : "AppIcon40x40.png", "scale" : "1x"},
-              {"size" : "40x40", "idiom" : "ipad", "filename" : "AppIcon72x72.png", "scale" : "2x"},
-              {"size" : "76x76", "idiom" : "ipad", "filename" : "AppIcon76x76.png", "scale" : "1x"},
-              {"size" : "76x76", "idiom" : "ipad", "filename" : "AppIcon76x76.png", "scale" : "2x"},
-              {"size" : "83.5x83.5", "idiom" : "ipad", "filename" : "AppIcon76x76.png", "scale" : "2x"}
+              {"size" : "20x20", "idiom" : "iphone", "filename" : "icon40x40.png",  "scale" : "2x"},
+              {"size" : "20x20", "idiom" : "iphone", "filename" : "icon60x60.png",  "scale" : "3x"},
+              {"size" : "29x29", "idiom" : "iphone", "filename" : "icon29x29.png",  "scale" : "1x"},
+              {"size" : "29x29", "idiom" : "iphone", "filename" : "icon58x58.png",  "scale" : "2x"},
+              {"size" : "29x29", "idiom" : "iphone", "filename" : "icon87x87.png",  "scale" : "3x"},
+              {"size" : "40x40", "idiom" : "iphone", "filename" : "icon80x80.png",  "scale" : "2x"},
+              {"size" : "40x40", "idiom" : "iphone", "filename" : "icon120x120.png","scale" : "3x"},
+              {"size" : "60x60", "idiom" : "iphone", "filename" : "icon120x120.png","scale" : "2x"},
+              {"size" : "60x60", "idiom" : "iphone", "filename" : "icon180x180.png","scale" : "3x"},
+              {"size" : "20x20", "idiom" : "ipad",   "filename" : "icon20x20.png",  "scale" : "1x"},
+              {"size" : "20x20", "idiom" : "ipad",   "filename" : "icon40x40.png",  "scale" : "2x"},
+              {"size" : "29x29", "idiom" : "ipad",   "filename" : "icon29x29.png",  "scale" : "1x"},
+              {"size" : "29x29", "idiom" : "ipad",   "filename" : "icon58x58.png",  "scale" : "2x"},
+              {"size" : "40x40", "idiom" : "ipad",   "filename" : "icon40x40.png",  "scale" : "1x"},
+              {"size" : "40x40", "idiom" : "ipad",   "filename" : "icon80x80.png",  "scale" : "2x"},
+              {"size" : "76x76", "idiom" : "ipad",   "filename" : "icon76x76.png",  "scale" : "1x"},
+              {"size" : "76x76", "idiom" : "ipad",   "filename" : "icon152x152.png","scale" : "2x"},
+              {"size" : "83.5x83.5", "idiom" : "ipad","filename" : "icon167x167.png","scale" : "2x"}
             ],
             "info" : { "author" : "xcode", "version" : 1 }
           }

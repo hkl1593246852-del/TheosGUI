@@ -103,3 +103,72 @@ func isBinaryFile(_ path: String) -> Bool {
 #if os(iOS)
 import Darwin
 #endif
+
+// MARK: - Shell Command Execution (iOS-compatible)
+
+/// 使用 posix_spawn 执行 shell 命令（替代 Process，后者不可用于 iOS）
+/// - Parameters:
+///   - command: 可执行文件路径（如 "/bin/sh", "/usr/bin/dpkg" 等）
+///   - arguments: 命令参数
+///   - captureOutput: 是否捕获 stdout
+/// - Returns: (exitCode: Int32, output: String?)
+@discardableResult
+func spawnCommand(_ command: String, arguments: [String] = [], captureOutput: Bool = false) -> (exitCode: Int32, output: String?) {
+    var output: String?
+
+    if captureOutput {
+        var pipe: [Int32] = [0, 0]
+        if pipe(&pipe) != 0 { return (-1, nil) }
+
+        var pid: pid_t = 0
+        var fileActions: posix_spawn_file_actions_t?
+        posix_spawn_file_actions_init(&fileActions)
+        posix_spawn_file_actions_addclose(&fileActions, pipe[0])
+        posix_spawn_file_actions_adddup2(&fileActions, pipe[1], STDOUT_FILENO)
+        posix_spawn_file_actions_addclose(&fileActions, pipe[1])
+
+        var argv = ([command] + arguments).map { $0.withCString { strdup($0) } }
+        defer { argv.forEach { free($0) } }
+
+        let ret = posix_spawn(&pid, command, &fileActions, nil, argv + [nil], environ)
+        posix_spawn_file_actions_destroy(&fileActions)
+        close(pipe[1])
+
+        if ret == 0 {
+            var status: Int32 = 0
+            waitpid(pid, &status, 0)
+
+            var data = Data()
+            var buf = [UInt8](repeating: 0, count: 4096)
+            var n: Int
+            repeat {
+                n = read(pipe[0], &buf, buf.count)
+                if n > 0 { data.append(buf, count: n) }
+            } while n > 0
+            close(pipe[0])
+            output = String(data: data, encoding: .utf8)
+            return (WIFEXITSTATUS(status), output)
+        }
+        close(pipe[0])
+        return (ret, nil)
+    } else {
+        var pid: pid_t = 0
+        var argv = ([command] + arguments).map { $0.withCString { strdup($0) } }
+        defer { argv.forEach { free($0) } }
+
+        let ret = posix_spawn(&pid, command, nil, nil, argv + [nil], environ)
+
+        if ret == 0 {
+            var status: Int32 = 0
+            waitpid(pid, &status, 0)
+            return (WIFEXITSTATUS(status), nil)
+        }
+        return (ret, nil)
+    }
+}
+
+/// 使用 /bin/sh 执行 shell 命令行字符串（便捷方法）
+@discardableResult
+func spawnShell(_ commandLine: String) -> (exitCode: Int32, output: String?) {
+    return spawnCommand("/bin/sh", arguments: ["-c", commandLine], captureOutput: true)
+}

@@ -2,6 +2,7 @@
 
 import UIKit
 import SafariServices
+import WebKit
 
 // ======================================================================
 // MARK: - DecryptedListViewController
@@ -275,5 +276,3 @@ class TGWebViewController: UIViewController {
 
     @objc func done() { dismiss(animated: true) }
 }
-
-import WebKit

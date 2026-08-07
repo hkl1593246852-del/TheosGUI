@@ -501,16 +501,3 @@ extension FileEditorViewController: UIScrollViewDelegate {
         // Line number sync
     }
 }
-
-// Note: MD5 needs CommonCrypto bridge header or use CryptoKit for iOS 13+
-#if canImport(CryptoKit)
-import CryptoKit
-
-extension FileEditorViewController {
-    func md5WithCryptoKit(_ path: String) -> String {
-        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else { return "" }
-        let digest = Insecure.MD5.hash(data: data)
-        return digest.map { String(format: "%02x", $0) }.joined()
-    }
-}
-#endif

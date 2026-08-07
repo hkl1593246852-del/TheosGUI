@@ -244,19 +244,19 @@ class ChatViewController: UIViewController {
     func addUserMessage(_ content: String) {
         let msg = ChatMessage(role: .user, content: content, timestamp: Date())
         messages.append(msg)
-        createMessageView(for: msg, at: messages.count - 1)
+        createMessageView(for: msg, index: messages.count - 1)
     }
 
     func addAssistantMessage(_ content: String) {
         let msg = ChatMessage(role: .assistant, content: content, timestamp: Date())
         messages.append(msg)
-        createMessageView(for: msg, at: messages.count - 1)
+        createMessageView(for: msg, index: messages.count - 1)
     }
 
     func addSystemMessage(_ content: String) {
         let msg = ChatMessage(role: .system, content: content, timestamp: Date())
         messages.append(msg)
-        createMessageView(for: msg, at: messages.count - 1)
+        createMessageView(for: msg, index: messages.count - 1)
     }
 
     func addContext(title: String, content: String, path: String?, type: String) {
@@ -501,7 +501,7 @@ class ChatViewController: UIViewController {
     func reloadMessages() {
         messageStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         for (index, msg) in messages.enumerated() {
-            createMessageView(for: msg, at: index)
+            createMessageView(for: msg, index: index)
         }
     }
 

@@ -97,7 +97,7 @@ class ShareViewController: UIViewController {
         loadApps()
 
         navigationItem.leftBarButtonItem = UIBarButtonItem(
-            title: "关闭", style: .done, target: self, action: #selector(dismiss)
+            title: "关闭", style: .done, target: self, action: #selector(dismissSelf)
         )
     }
 
@@ -111,7 +111,7 @@ class ShareViewController: UIViewController {
     }
 
     func loadApps() { /* 加载可分享的应用列表 */ }
-    @objc func dismiss() { self.dismiss(animated: true) }
+    @objc func dismissSelf() { self.dismiss(animated: true) }
 }
 
 extension ShareViewController: UICollectionViewDataSource, UICollectionViewDelegate {

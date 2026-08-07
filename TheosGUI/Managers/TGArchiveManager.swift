@@ -28,10 +28,6 @@ class TGArchiveManager {
                              progress: ProgressHandler? = nil,
                              completion: @escaping CompletionHandler) {
         DispatchQueue.global().async {
-            // 使用 Process 调用系统命令
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
-
             var args = ["-r", dest]
             if let password = password, !password.isEmpty {
                 args.insert("-P", at: 0)
@@ -39,26 +35,13 @@ class TGArchiveManager {
             }
             args.append(contentsOf: paths)
 
-            task.arguments = args
-
-            let pipe = Pipe()
-            task.standardError = pipe
-
-            do {
-                try task.run()
-                task.waitUntilExit()
-
-                if task.terminationStatus == 0 {
-                    DispatchQueue.main.async { completion(.success(dest)) }
+            let result = spawnCommand("/usr/bin/zip", arguments: args)
+            DispatchQueue.main.async {
+                if result.exitCode == 0 {
+                    completion(.success(dest))
                 } else {
-                    let errorData = pipe.fileHandleForReading.readDataToEndOfFile()
-                    let errorStr = String(data: errorData, encoding: .utf8) ?? ""
-                    DispatchQueue.main.async {
-                        completion(.failure(ArchiveError.compressionFailed))
-                    }
+                    completion(.failure(ArchiveError.compressionFailed))
                 }
-            } catch {
-                DispatchQueue.main.async { completion(.failure(error)) }
             }
         }
     }
@@ -70,32 +53,19 @@ class TGArchiveManager {
                               progress: ProgressHandler? = nil,
                               completion: @escaping CompletionHandler) {
         DispatchQueue.global().async {
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
-            task.currentDirectoryURL = URL(fileURLWithPath: dest)
-
             var args = ["-o", path]
             if let password = password, !password.isEmpty {
                 args.insert("-P", at: 0)
                 args.insert(password, at: 1)
             }
 
-            task.arguments = args
-            let pipe = Pipe()
-            task.standardError = pipe
-
-            do {
-                try task.run()
-                task.waitUntilExit()
-                if task.terminationStatus == 0 {
-                    DispatchQueue.main.async { completion(.success(dest)) }
+            let result = spawnCommand("/usr/bin/unzip", arguments: args)
+            DispatchQueue.main.async {
+                if result.exitCode == 0 {
+                    completion(.success(dest))
                 } else {
-                    DispatchQueue.main.async {
-                        completion(.failure(ArchiveError.decompressionFailed))
-                    }
+                    completion(.failure(ArchiveError.decompressionFailed))
                 }
-            } catch {
-                DispatchQueue.main.async { completion(.failure(error)) }
             }
         }
     }

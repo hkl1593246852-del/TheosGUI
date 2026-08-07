@@ -2,6 +2,7 @@
 // TheosGUI Clone
 
 import UIKit
+import AVFoundation
 
 // ======================================================================
 // MARK: - TGInsertDylib
@@ -117,8 +118,6 @@ class TGThumbnailGenerator {
         }
     }
 }
-
-import AVFoundation
 
 // ======================================================================
 // MARK: - ChatProviderManager

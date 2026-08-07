@@ -92,7 +92,7 @@ class AppListViewController: UIViewController {
                                     name: name,
                                     bundleID: bundleID,
                                     path: appPath,
-                                    isDecrypted: isAppDecrypted(appPath)
+                                    isDecrypted: self.isAppDecrypted(appPath)
                                 ))
                             }
                         }

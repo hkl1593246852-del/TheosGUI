@@ -3,6 +3,7 @@
 // 功能: Shell 执行 / ANSI 颜色 / 伪终端 / 本地编译模式
 
 import UIKit
+import Foundation
 
 class ConsoleViewController: UIViewController {
 
@@ -153,41 +154,15 @@ class ConsoleViewController: UIViewController {
     /// 实际的 Shell 执行
     @discardableResult
     class func executeShellCommand(_ command: String, completion: ((String) -> Void)? = nil) -> Int32 {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/bin/sh")
-        task.arguments = ["-c", command]
-
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = pipe
-
-        try? task.run()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        task.waitUntilExit()
-        let output = String(data: data, encoding: .utf8) ?? ""
-        completion?(output)
-        return task.terminationStatus
+        let result = spawnShell(command)
+        completion?(result.output ?? "")
+        return result.exitCode
     }
 
     private func executeShell(command: String) -> String {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/bin/sh")
-        task.arguments = ["-c", command]
-        task.currentDirectoryURL = URL(fileURLWithPath: targetPath)
-
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = pipe
-
-        do {
-            try task.run()
-        } catch {
-            return "执行失败: \(error.localizedDescription)"
-        }
-
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        task.waitUntilExit()
-        return String(data: data, encoding: .utf8) ?? "nil"
+        let cmd = "cd \"\(targetPath)\" && \(command)"
+        let result = spawnShell(cmd)
+        return result.output ?? "nil"
     }
 
     func executeExecutable(_ path: String, arguments: [String]) {

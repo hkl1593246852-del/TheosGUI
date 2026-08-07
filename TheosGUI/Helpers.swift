@@ -117,22 +117,22 @@ func spawnCommand(_ command: String, arguments: [String] = [], captureOutput: Bo
     var output: String?
 
     if captureOutput {
-        var pipe: [Int32] = [0, 0]
-        if pipe(&pipe) != 0 { return (-1, nil) }
+        var fds: [Int32] = [0, 0]
+        if pipe(&fds) != 0 { return (-1, nil) }
 
         var pid: pid_t = 0
         var fileActions: posix_spawn_file_actions_t?
         posix_spawn_file_actions_init(&fileActions)
-        posix_spawn_file_actions_addclose(&fileActions, pipe[0])
-        posix_spawn_file_actions_adddup2(&fileActions, pipe[1], STDOUT_FILENO)
-        posix_spawn_file_actions_addclose(&fileActions, pipe[1])
+        posix_spawn_file_actions_addclose(&fileActions, fds[0])
+        posix_spawn_file_actions_adddup2(&fileActions, fds[1], STDOUT_FILENO)
+        posix_spawn_file_actions_addclose(&fileActions, fds[1])
 
         var argv = ([command] + arguments).map { $0.withCString { strdup($0) } }
         defer { argv.forEach { free($0) } }
 
         let ret = posix_spawn(&pid, command, &fileActions, nil, argv + [nil], environ)
         posix_spawn_file_actions_destroy(&fileActions)
-        close(pipe[1])
+        close(fds[1])
 
         if ret == 0 {
             var status: Int32 = 0
@@ -142,14 +142,15 @@ func spawnCommand(_ command: String, arguments: [String] = [], captureOutput: Bo
             var buf = [UInt8](repeating: 0, count: 4096)
             var n: Int
             repeat {
-                n = read(pipe[0], &buf, buf.count)
+                n = read(fds[0], &buf, buf.count)
                 if n > 0 { data.append(buf, count: n) }
             } while n > 0
-            close(pipe[0])
+            close(fds[0])
             output = String(data: data, encoding: .utf8)
-            return (WIFEXITSTATUS(status), output)
+            let exitCode = (status >> 8) & 0xFF
+            return (Int32(exitCode), output)
         }
-        close(pipe[0])
+        close(fds[0])
         return (ret, nil)
     } else {
         var pid: pid_t = 0
@@ -161,7 +162,8 @@ func spawnCommand(_ command: String, arguments: [String] = [], captureOutput: Bo
         if ret == 0 {
             var status: Int32 = 0
             waitpid(pid, &status, 0)
-            return (WIFEXITSTATUS(status), nil)
+            let exitCode = (status >> 8) & 0xFF
+            return (Int32(exitCode), nil)
         }
         return (ret, nil)
     }

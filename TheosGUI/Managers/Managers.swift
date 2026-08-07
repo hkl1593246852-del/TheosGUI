@@ -18,24 +18,15 @@ class TGInsertDylib {
     /// 向 Mach-O 二进制中注入 dylib
     @discardableResult
     class func insert(dylibPath: String, into binaryPath: String) throws -> Bool {
-        // 使用 install_name_tool 或 optool
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/install_name_tool")
-        task.arguments = ["-change", dylibPath, dylibPath, binaryPath]
-        try task.run()
-        task.waitUntilExit()
-        return task.terminationStatus == 0
+        let result = spawnCommand("/usr/bin/install_name_tool", arguments: ["-change", dylibPath, dylibPath, binaryPath])
+        return result.exitCode == 0
     }
 
     /// 从 Mach-O 二进制中移除 dylib
     @discardableResult
     class func remove(dylibPath: String, from binaryPath: String) throws -> Bool {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/install_name_tool")
-        task.arguments = ["-delete", dylibPath, binaryPath]
-        try task.run()
-        task.waitUntilExit()
-        return task.terminationStatus == 0
+        let result = spawnCommand("/usr/bin/install_name_tool", arguments: ["-delete", dylibPath, binaryPath])
+        return result.exitCode == 0
     }
 }
 
@@ -165,22 +156,10 @@ class TDDecryptionTask {
     }
 
     func execute(completion: @escaping (Bool) -> Void) {
-        // 在越狱设备上，调用 clutch 或 bfdecrypt 进行解密
         DispatchQueue.global().async {
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: "/usr/bin/clutch")
-            task.arguments = ["-d", self.app.bundleID]
-
-            let pipe = Pipe()
-            task.standardOutput = pipe
-
-            do {
-                try task.run()
-                task.waitUntilExit()
-                let success = task.terminationStatus == 0
-                DispatchQueue.main.async { completion(success) }
-            } catch {
-                DispatchQueue.main.async { completion(false) }
+            let result = spawnCommand("/usr/bin/clutch", arguments: ["-d", self.app.bundleID])
+            DispatchQueue.main.async {
+                completion(result.exitCode == 0)
             }
         }
     }

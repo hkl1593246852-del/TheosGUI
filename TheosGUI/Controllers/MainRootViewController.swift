@@ -4,6 +4,7 @@
 
 import UIKit
 import UniformTypeIdentifiers
+import QuickLook
 
 class MainRootViewController: UIViewController {
 
@@ -762,8 +763,3 @@ extension MainRootViewController: UITextFieldDelegate {
 }
 
 // MARK: - Helpers
-private func formatSize(_ bytes: UInt64) -> String {
-    let formatter = ByteCountFormatter()
-    formatter.countStyle = .file
-    return formatter.string(fromByteCount: Int64(bytes))
-}

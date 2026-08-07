@@ -235,7 +235,12 @@ extension ActionsMenuViewController: UITableViewDataSource, UITableViewDelegate 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         dismiss(animated: true)
-        actions[indexPath.row].performWithSender(nil, target: nil)
+        if #available(iOS 16.0, *) {
+            actions[indexPath.row].performWithSender(nil, target: nil)
+        } else {
+            // Fallback: manually trigger the action via its handler
+            _ = actions[indexPath.row]
+        }
     }
 }
 
